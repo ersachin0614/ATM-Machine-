@@ -9,7 +9,7 @@ public class AtmApplication {
     public static void main(String[] args) {
         SpringApplication app = new SpringApplication(AtmApplication.class);
         
-        // Dynamically setting port to 8081
+        // port to 8081
         app.setDefaultProperties(java.util.Collections.singletonMap("server.port", "8081"));
         
         app.run(args);

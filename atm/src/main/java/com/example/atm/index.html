@@ -1,19 +1,325 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>ATM Machine</title>
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            margin: 0;
+            padding: 0;
+            background: url('https://images.unsplash.com/photo-1561928953-9e1e1197c0d5') no-repeat center center fixed; /* Banking Related Image */
+            background-size: cover;
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .atm-container {
+            background-color: rgba(255, 255, 255, 0.8); /* Slight transparency for better contrast */
+            padding: 40px;
+            border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+            width: 350px;
+            text-align: center;
+            transform: translateY(20px);
+            transition: transform 0.3s ease;
+        }
+
+        .atm-container:hover {
+            transform: translateY(0);
+        }
+
+        .atm-logo {
+            font-size: 28px;
+            font-weight: bold;
+            color: #2c3e50;
+            margin-bottom: 30px;
+        }
+
+        .atm-header {
+            font-size: 22px;
+            color: #003366;
+            font-weight: bold;
+            margin-bottom: 20px;
+        }
+
+        .atm-container button, .atm-container input[type="number"], .atm-container select {
+            width: 100%;
+            padding: 12px;
+            margin: 10px 0;
+            border-radius: 8px;
+            border: 1px solid #ddd;
+            font-size: 16px;
+            box-sizing: border-box;
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+
+        button {
+            background: linear-gradient(to right, #007BFF, #0056b3);
+            color: white;
+            border: none;
+        }
+
+        button:hover {
+            background: linear-gradient(to right, #0056b3, #003366);
+            transform: translateY(-2px);
+        }
+
+        .progress-bar {
+            width: 0;
+            height: 5px;
+            background-color: #3498db;
+            margin-top: 10px;
+            transition: width 2s ease-in-out;
+        }
+
+        .message {
+            margin-top: 20px;
+            font-weight: bold;
+            font-size: 18px;
+            color: #333;
+        }
+
+        .message.success {
+            color: green;
+        }
+
+        .message.error {
+            color: red;
+        }
+
+        /* Modal Popup Styles */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.5);
+            justify-content: center;
+            align-items: center;
+        }
+
+        .modal-content {
+            background-color: white;
+            padding: 20px;
+            border-radius: 8px;
+            width: 300px;
+            text-align: center;
+        }
+
+        .modal button {
+            background-color: #007BFF;
+            color: white;
+            padding: 10px 20px;
+            border-radius: 8px;
+            border: none;
+        }
+
+        .modal button:hover {
+            background-color: #0056b3;
+        }
+
+    </style>
 </head>
 <body>
-    <h1>ATM Withdraw</h1>
-    <form action="http://localhost:8081/withdraw" method="POST">
-        Amount: <input type="number" name="amount" required>
-        <button type="submit">Withdraw</button>
-    </form>
+    <div class="atm-container">
+        <div class="atm-logo">
+            <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/4/45/American_Express_logo_2018.svg/150px-American_Express_logo_2018.svg.png" alt="American Express" width="120">
+        </div>
+        <div class="atm-header" id="atmHeader">ATM Machine</div>
 
-    <h1>ATM Deposit</h1>
-    <form action="http://localhost:8081/deposit" method="POST">
-        Amount: <input type="number" name="amount" required>
-        <button type="submit">Deposit</button>
-    </form>
+        <!-- Language Selection -->
+        <select id="languageSelect">
+            <option value="en">English</option>
+            <option value="hi">हिंदी</option>
+            <option value="ur">اردو</option>
+            <option value="es">Español</option>
+            <option value="fr">Français</option>
+        </select>
+
+        <!-- Balance Check -->
+        <button id="checkBalanceBtn" data-translate="checkBalance">Check Balance</button>
+        <br><br>
+
+        <!-- Withdraw Money -->
+        <input type="number" id="withdrawAmount" placeholder="Enter amount to withdraw" />
+        <button id="withdrawBtn" data-translate="withdraw">Withdraw</button>
+        <br><br>
+
+        <!-- Deposit Money -->
+        <input type="number" id="depositAmount" placeholder="Enter amount to deposit" />
+        <button id="depositBtn" data-translate="deposit">Deposit</button>
+
+        <!-- Progress Bar -->
+        <div class="progress-bar" id="progressBar"></div>
+
+        <div class="message" id="message"></div>
+    </div>
+
+    <!-- Modal for Success/Failure -->
+    <div id="popupModal" class="modal">
+        <div class="modal-content">
+            <div id="popupMessage"></div>
+            <button onclick="closePopup()">OK</button>
+        </div>
+    </div>
+
+    <script>
+        const translations = {
+            en: {
+                atmHeader: "ATM Machine",
+                checkBalance: "Check Balance",
+                withdraw: "Withdraw",
+                deposit: "Deposit",
+                success: "Transaction Successful!",
+                error: "Error occurred",
+                invalidAmount: "Please enter a valid amount.",
+                balance: "Your balance is: ₹",
+                depositSuccess: "Deposit Successful! Remaining balance: ₹",
+                withdrawSuccess: "Withdrawal Successful! Remaining balance: ₹"
+            },
+            hi: {
+                atmHeader: "एटीएम मशीन",
+                checkBalance: "बैलेंस चेक करें",
+                withdraw: "निकासी करें",
+                deposit: "जमा करें",
+                success: "लेन-देन सफल!",
+                error: "त्रुटि हुई",
+                invalidAmount: "कृपया एक वैध राशि दर्ज करें।",
+                balance: "आपका बैलेंस है: ₹",
+                depositSuccess: "जमा सफल! शेष राशि: ₹",
+                withdrawSuccess: "निकासी सफल! शेष राशि: ₹"
+            },
+            ur: {
+                atmHeader: "اے ٹی ایم مشین",
+                checkBalance: "بیلنس چیک کریں",
+                withdraw: "واپسی کریں",
+                deposit: "جمع کریں",
+                success: "لین دین کامیاب!",
+                error: "کچھ غلط ہو گیا",
+                invalidAmount: "براہ کرم ایک درست رقم درج کریں۔",
+                balance: "آپ کا بیلنس ہے: ₹",
+                depositSuccess: "جمع کامیاب! باقی رقم: ₹",
+                withdrawSuccess: "واپسی کامیاب! باقی رقم: ₹"
+            },
+            es: {
+                atmHeader: "Máquina de cajero automático",
+                checkBalance: "Comprobar saldo",
+                withdraw: "Retirar",
+                deposit: "Depositar",
+                success: "¡Transacción exitosa!",
+                error: "Ocurrió un error",
+                invalidAmount: "Por favor ingrese una cantidad válida.",
+                balance: "Tu saldo es: ₹",
+                depositSuccess: "¡Depósito exitoso! Saldo restante: ₹",
+                withdrawSuccess: "¡Retiro exitoso! Saldo restante: ₹"
+            },
+            fr: {
+                atmHeader: "Distributeur automatique",
+                checkBalance: "Vérifier le solde",
+                withdraw: "Retirer",
+                deposit: "Déposer",
+                success: "Transaction réussie!",
+                error: "Une erreur est survenue",
+                invalidAmount: "Veuillez entrer un montant valide.",
+                balance: "Votre solde est : ₹",
+                depositSuccess: "Dépôt réussi! Solde restant : ₹",
+                withdrawSuccess: "Retrait réussi! Solde restant : ₹"
+            }
+        };
+
+        function changeLanguage(lang) {
+            document.getElementById("atmHeader").textContent = translations[lang].atmHeader;
+            document.getElementById("checkBalanceBtn").textContent = translations[lang].checkBalance;
+            document.getElementById("withdrawBtn").textContent = translations[lang].withdraw;
+            document.getElementById("depositBtn").textContent = translations[lang].deposit;
+        }
+
+        // Change language based on user selection
+        document.getElementById("languageSelect").addEventListener("change", function() {
+            changeLanguage(this.value);
+        });
+
+        function showLoader(show) {
+            const progressBar = document.getElementById('progressBar');
+            if (show) {
+                progressBar.style.width = '100%';
+            } else {
+                progressBar.style.width = '0';
+            }
+        }
+
+        function showPopup(message) {
+            const popup = document.getElementById('popupModal');
+            const popupMessage = document.getElementById('popupMessage');
+            popupMessage.innerHTML = message;
+            popup.style.display = 'flex';
+        }
+
+        function closePopup() {
+            document.getElementById('popupModal').style.display = 'none';
+        }
+
+        // Check Balance
+        document.getElementById('checkBalanceBtn').addEventListener('click', function() {
+            showLoader(true);
+            fetch('http://localhost:8081/balance')
+                .then(response => response.text())
+                .then(data => {
+                    showLoader(false);
+                    showPopup(translations[document.getElementById("languageSelect").value].balance + data);
+                })
+                .catch(error => {
+                    showLoader(false);
+                    showPopup(translations[document.getElementById("languageSelect").value].error);
+                });
+        });
+
+        // Withdraw Money
+        document.getElementById('withdrawBtn').addEventListener('click', function() {
+            const amount = document.getElementById('withdrawAmount').value;
+            if (amount <= 0) {
+                showPopup(translations[document.getElementById("languageSelect").value].invalidAmount);
+                return;
+            }
+            showLoader(true);
+            fetch('http://localhost:8081/withdraw?amount=' + amount, { method: 'POST' })
+                .then(response => response.text())
+                .then(data => {
+                    showLoader(false);
+                    showPopup(translations[document.getElementById("languageSelect").value].withdrawSuccess + data);
+                })
+                .catch(error => {
+                    showLoader(false);
+                    showPopup(translations[document.getElementById("languageSelect").value].error);
+                });
+        });
+
+        // Deposit Money
+        document.getElementById('depositBtn').addEventListener('click', function() {
+            const amount = document.getElementById('depositAmount').value;
+            if (amount <= 0) {
+                showPopup(translations[document.getElementById("languageSelect").value].invalidAmount);
+                return;
+            }
+            showLoader(true);
+            fetch('http://localhost:8081/deposit?amount=' + amount, { method: 'POST' })
+                .then(response => response.text())
+                .then(data => {
+                    showLoader(false);
+                    showPopup(translations[document.getElementById("languageSelect").value].depositSuccess + data);
+                })
+                .catch(error => {
+                    showLoader(false);
+                    showPopup(translations[document.getElementById("languageSelect").value].error);
+                });
+        });
+    </script>
 </body>
 </html>
