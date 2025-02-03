@@ -1,0 +1,19 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>ATM Machine</title>
+</head>
+<body>
+    <h1>ATM Withdraw</h1>
+    <form action="http://localhost:8081/withdraw" method="POST">
+        Amount: <input type="number" name="amount" required>
+        <button type="submit">Withdraw</button>
+    </form>
+
+    <h1>ATM Deposit</h1>
+    <form action="http://localhost:8081/deposit" method="POST">
+        Amount: <input type="number" name="amount" required>
+        <button type="submit">Deposit</button>
+    </form>
+</body>
+</html>
